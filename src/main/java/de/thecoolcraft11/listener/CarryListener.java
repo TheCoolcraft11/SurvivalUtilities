@@ -57,7 +57,6 @@ public class CarryListener implements Listener {
 
         if (event.isSneaking()) {
             sneakStartTimes.put(playerUUID, System.currentTimeMillis());
-            long startTime = sneakStartTimes.get(playerUUID);
 
             BukkitRunnable runnable = new BukkitRunnable() {
                 //int time = 4;
@@ -91,7 +90,6 @@ public class CarryListener implements Listener {
 
         } else
             if (sneakStartTimes.containsKey(playerUUID)) {
-                long startTime = sneakStartTimes.remove(playerUUID);
                 for (Entity passenger : event.getPlayer().getPassengers()) {
                     if(!latestPickedEntity.contains(playerUUID)) {
                         event.getPlayer().removePassenger(passenger);

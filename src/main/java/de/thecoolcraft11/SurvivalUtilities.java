@@ -34,8 +34,4 @@ public final class SurvivalUtilities extends JavaPlugin {
         // Plugin shutdown logic
     }
 
-    @NotNull
-    public Config getPluginConfig() {
-        return config;
-    }
 }
