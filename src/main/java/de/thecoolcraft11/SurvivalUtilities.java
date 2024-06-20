@@ -15,6 +15,8 @@ public final class SurvivalUtilities extends JavaPlugin {
     @Override
     public void onEnable() {
 
+        config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+
         if (config.getFileConfiguration().getBoolean("commands.chunkbase.enabled")) {
             getCommand("chunkbase").setExecutor(new ChunkbaseCommand());
         }

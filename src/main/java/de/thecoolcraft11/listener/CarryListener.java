@@ -1,15 +1,23 @@
 package de.thecoolcraft11.listener;
 
+
 import de.thecoolcraft11.SurvivalUtilities;
 import de.thecoolcraft11.util.Config;
-import io.papermc.paper.event.player.ChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,24 +49,71 @@ public class CarryListener implements Listener {
         }
     }
 
-
+    int time = 0;
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         UUID playerUUID = event.getPlayer().getUniqueId();
 
+
         if (event.isSneaking()) {
             sneakStartTimes.put(playerUUID, System.currentTimeMillis());
+            long startTime = sneakStartTimes.get(playerUUID);
+
+            BukkitRunnable runnable = new BukkitRunnable() {
+                //int time = 4;
+                @Override
+                public void run() {
+                    time++;
+                    StringBuilder s = new StringBuilder();
+                    for(int i = 1; i < getNumberPattern(time,11); i++) {
+                        s.append("█");
+                    }
+                    StringBuilder s2 = new StringBuilder();
+                    for(int i = 1; i < 11 - getNumberPattern(time,11); i++) {
+                        s2.append(" ");
+                    }
+
+                            TextComponent component = Component.text(s2.toString()  + s + "  " + ChatColor.BOLD + getNumberPattern(time,11) + ChatColor.RESET + "  " + s + s2);
+                    //event.getPlayer().sendMessage(component);
+                    event.getPlayer().sendActionBar(component);
+                    s.delete(0,s.length());
+                    if(!event.getPlayer().isSneaking()) {
+                        cancel();
+                        event.getPlayer().sendActionBar("");
+                        //throwStrength = time / 10;
+                    }
+                }
+            };
+            if (event.getPlayer().getPassenger() != null) {
+                runnable.runTaskTimer(SurvivalUtilities.getPlugin(SurvivalUtilities.class),0,2);
+            }
+
+
         } else
             if (sneakStartTimes.containsKey(playerUUID)) {
                 long startTime = sneakStartTimes.remove(playerUUID);
-                float sneakDuration = (float) (System.currentTimeMillis() - startTime) / 100;
                 for (Entity passenger : event.getPlayer().getPassengers()) {
                     if(!latestPickedEntity.contains(playerUUID)) {
                         event.getPlayer().removePassenger(passenger);
                         if(passenger.getType() == EntityType.PLAYER) {
-                            passenger.teleport(event.getPlayer());
+                            Player player = (Player) passenger;
+                            player.setVelocity(event.getPlayer().getLocation().getDirection().multiply(Math.min(getNumberPattern(time, 11) / 5, 2)));
                         }
-                        passenger.setVelocity(event.getPlayer().getLocation().getDirection().multiply(Math.min(sneakDuration / 5, 2)));
+                        passenger.setVelocity(event.getPlayer().getLocation().getDirection().multiply(Math.min(getNumberPattern(time, 11) / 5, 2)));
+
+                        BukkitRunnable runnable = new BukkitRunnable() {
+
+                            @Override
+                            public void run() {
+                                World world = passenger.getWorld();
+
+                                world.spawnParticle(Particle.HAPPY_VILLAGER,passenger.getLocation(),1);
+                                if(passenger.getLocation().add(0,-1,0).getBlock().getType() != Material.AIR) {
+                                    cancel();
+                                }
+                            }
+                        };
+                        runnable.runTaskTimer(SurvivalUtilities.getPlugin(SurvivalUtilities.class),0,1);
                     }
                 }
             }
@@ -75,5 +130,16 @@ public class CarryListener implements Listener {
             }
         }
     }
+    private static int getNumberPattern(int input, int limit) {
+        int cycleLength = 2 * limit - 2;
+        int position = input % cycleLength;
 
+        if (position == 0) {
+            return 2; // Special case for multiples of cycleLength
+        } else if (position <= limit) {
+            return position;
+        } else {
+            return 2 * limit - position;
+        }
+    }
 }
