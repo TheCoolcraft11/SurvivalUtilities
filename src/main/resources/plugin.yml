@@ -1,0 +1,9 @@
+name: SurvivalUtilities
+version: '${project.version}'
+main: de.thecoolcraft11.SurvivalUtilities
+api-version: '1.20'
+commands:
+  chunkbase:
+    aliases:
+      - cb
+    permission: survivalutilities.chunkbase

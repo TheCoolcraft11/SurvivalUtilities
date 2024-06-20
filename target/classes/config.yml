@@ -1,0 +1,18 @@
+language: en_US
+commands:
+  chunkbase:
+    enabled: true
+
+functions:
+  carryMobs:
+    enabled: true
+    ##Allow the player to pick up multiple entities at once
+    allowMultiPicking: false
+    ##Requieres the player the permission 'survivalutilities.carry.pickup.<ENTITY_TYPE>' to pick it up
+    requirePermission: false
+    ##Allow the player to pick up mobs that are stacked
+    allowRiders: true
+    blacklistedWorlds:
+     ## -world
+    blacklistedEntities:
+      ##-PIG
