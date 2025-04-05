@@ -2,17 +2,44 @@ language: en_US
 commands:
   chunkbase:
     enabled: true
+  exec:
+    enabled: true
 
 functions:
   carryMobs:
     enabled: true
+    ##Protect OP players or players with permission 'survivalutlities.carry.protected'
+    protectOP: true
     ##Allow the player to pick up multiple entities at once
     allowMultiPicking: false
-    ##Requieres the player the permission 'survivalutilities.carry.pickup.<ENTITY_TYPE>' to pick it up
+    ##Protect tamed animals so only the owner can carry them around
+    protectTamed: true
+    ##Requieres the player the permission 'survivalutilities.carry.pickup.<ENTITY_TYPE>' to pick the  entity of that type up
     requirePermission: false
     ##Allow the player to pick up mobs that are stacked
     allowRiders: true
     blacklistedWorlds:
-     ## -world
+    ## -world
     blacklistedEntities:
-      ##-PIG
+    ##-PIG
+    ##Allow the player to carry blocks
+    allowBlockCarry: true
+    ##Use list below to blacklist blocks
+    blacklistBlocks: false
+    ##Use list to whitelist/blacklist blocks
+    whitelistBlocks:
+      - CHEST
+      - DROPPER
+      - DISPENSER
+      - ENDER_CHEST
+      - PLAYER_HEAD
+    ##Disables Damage from the other entity while carrying
+    disableAttacking: true
+  monsters:
+    enabled: false
+    ##Make listed monster aggro normally
+    allowed:
+      - ZOMBIFIED_PIGLIN
+  tntProtection:
+    enabled: false
+    ## Cancel tnt explosion when player hasn't got permission 'survivalutilities.tnt.use'

@@ -7,3 +7,18 @@ commands:
     aliases:
       - cb
     permission: survivalutilities.chunkbase
+  survivalutilities:
+    permission: survivalutilities.survivalutilities
+  sudo:
+    permission: survivalutilities.sudo
+    description: Execute a command as an other player
+  keepinventory:
+    description: Toggles keepinventory for you
+  blueprint:
+    description: Create Blueprints
+  save:
+    description: Save a blueprint
+  place:
+    description: Place a saved blueprint
+  jail:
+    permission: survivalutilities.jail
