@@ -1,0 +1,14 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+.idea/
+*.iml
+*.ipr
+*.iws
+target/
+run/
+
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
