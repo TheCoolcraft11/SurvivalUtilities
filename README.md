@@ -1,4 +1,4 @@
-### Download [Here](https://modrinth.com/mod/screenshot-uploader) at Modrinth
+### Download [Here](https://modrinth.com/plugin/survivalutilities) at Modrinth
 ##
 **SurvivalUtilities** is a Paper plugin designed to enhance your Minecraft gameplay by adding several powerful features, including:
 
