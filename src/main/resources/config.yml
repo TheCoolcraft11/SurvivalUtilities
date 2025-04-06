@@ -2,7 +2,11 @@ language: en_US
 commands:
   chunkbase:
     enabled: true
-  exec:
+  keepInventory:
+    enabled: true
+  placeSchematic:
+    enabled: true
+  saveSchematic:
     enabled: true
 
 functions:
@@ -41,5 +45,9 @@ functions:
     allowed:
       - ZOMBIFIED_PIGLIN
   tntProtection:
-    enabled: false
     ## Cancel tnt explosion when player hasn't got permission 'survivalutilities.tnt.use'
+    enabled: false
+  chatMentions:
+    enabled: true
+  keepInventory:
+    enabled: true

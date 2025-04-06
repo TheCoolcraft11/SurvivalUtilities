@@ -8,7 +8,6 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.block.BlockState;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,16 +22,12 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class CarryListener implements Listener {
     private static final NamespacedKey namespacedKey = new NamespacedKey(SurvivalUtilities.getPlugin(SurvivalUtilities.class), "isCarry");
     private final HashMap<UUID, Long> sneakStartTimes = new HashMap<>();
     private static final List<UUID> latestPickedEntity = new ArrayList<>();
-    private final HashMap<UUID, BlockState> fallingBlockInv = new HashMap<>();
     Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -92,21 +87,17 @@ public class CarryListener implements Listener {
                 public void run() {
                     time++;
                     StringBuilder s = new StringBuilder();
-                    for (int i = 1; i < getNumberPattern(time, 11); i++) {
-                        s.append("█");
-                    }
+                    s.append("█".repeat(Math.max(0, getNumberPattern(time) - 1)));
                     StringBuilder s2 = new StringBuilder();
-                    for (int i = 1; i < 11 - getNumberPattern(time, 11); i++) {
-                        s2.append(" ");
-                    }
+                    s2.append(" ".repeat(Math.max(0, 11 - getNumberPattern(time) - 1)));
 
-                    TextComponent component = Component.text(s2 + getRainbowString(s.toString(), true, false) + "  " + ChatColor.BOLD + getNumberPattern(time, 11) + ChatColor.RESET + "  " + getRainbowString(s.toString(), false, true) + s2);
+                    TextComponent component = Component.text(s2 + getRainbowString(s.toString(), true, false) + "  " + ChatColor.BOLD + getNumberPattern(time) + ChatColor.RESET + "  " + getRainbowString(s.toString(), false, true) + s2);
                     event.getPlayer().sendActionBar(component);
                     s.delete(0, s.length());
                     if (!event.getPlayer().isSneaking()) {
                         time = 0;
                         cancel();
-                        event.getPlayer().sendActionBar("");
+                        event.getPlayer().sendActionBar(Component.text(""));
                         //throwStrength = time / 10;
                     }
                 }
@@ -120,14 +111,14 @@ public class CarryListener implements Listener {
             for (Entity passenger : event.getPlayer().getPassengers()) {
                 if (!latestPickedEntity.contains(playerUUID)) {
                     event.getPlayer().removePassenger(passenger);
-                    passenger.setVelocity(event.getPlayer().getLocation().getDirection().multiply(Math.min(getNumberPattern(time, 11) / 5, 2)));
+                    passenger.setVelocity(event.getPlayer().getLocation().getDirection().multiply(Math.min(getNumberPattern(time) / 5, 2)));
                     BukkitRunnable runnable = new BukkitRunnable() {
 
                         int i = 0;
 
                         @Override
                         public void run() {
-                            if (passenger == null || (passenger instanceof LivingEntity && passenger.isDead()) || !passenger.isValid()) {
+                            if (passenger instanceof LivingEntity && passenger.isDead() || !passenger.isValid()) {
                                 cancel();
                             } else {
                                 World world = passenger.getWorld();
@@ -193,14 +184,14 @@ public class CarryListener implements Listener {
                     armorStand.setInvulnerable(true);
                     armorStand.setBasePlate(false);
                     armorStand.setSmall(true);
-                    armorStand.getAttribute(Attribute.GENERIC_SCALE).setBaseValue(0.1);
+                    Objects.requireNonNull(armorStand.getAttribute(Attribute.GENERIC_SCALE)).setBaseValue(0.1);
                     armorStand.addPassenger(target);
                     player.addPassenger(armorStand);
                     BukkitRunnable runnable = new BukkitRunnable() {
                         @Override
                         public void run() {
                             if (armorStand.getVehicle() == null) {
-                                if (armorStand.isValid() && armorStand != null) {
+                                if (armorStand.isValid()) {
                                     if (armorStand.getPassenger() != null && armorStand.getPassenger().isValid()) {
                                         if (!armorStand.getWorld().getBlockAt(armorStand.getLocation().add(0, -0.1, 0)).isPassable()) {
                                             armorStand.removePassenger(armorStand.getPassenger());
@@ -233,7 +224,7 @@ public class CarryListener implements Listener {
     private static void pickUpBlockEntity(Config config, Player player, ArmorStand armorStand) {
         player.addPassenger(armorStand);
         armorStand.setNoPhysics(false);
-        ((FallingBlock) armorStand.getPassenger()).setHurtEntities(true);
+        ((FallingBlock) Objects.requireNonNull(armorStand.getPassenger())).setHurtEntities(true);
         armorStand.getPersistentDataContainer().set(new NamespacedKey(SurvivalUtilities.getPlugin(SurvivalUtilities.class), "isPickedUpBlock"), PersistentDataType.BOOLEAN, true);
         armorStand.getPassenger().getPersistentDataContainer().set(new NamespacedKey(SurvivalUtilities.getPlugin(SurvivalUtilities.class), "isPickedUpBlock"), PersistentDataType.BOOLEAN, true);
         if (!latestPickedEntity.contains(player.getUniqueId())) {
@@ -241,21 +232,17 @@ public class CarryListener implements Listener {
             BukkitRunnable runnable = new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (armorStand != null) {
-                        if (armorStand.getVehicle() == null) {
-                            if (!armorStand.getWorld().getBlockAt(armorStand.getLocation()).getType().isAir()) {
-                                armorStand.getLocation().getBlock().breakNaturally();
-                                armorStand.teleport(new Location(armorStand.getWorld(), Math.round(armorStand.getX()) + 0.5, Math.round(armorStand.getY()), Math.round(armorStand.getZ()) + 0.5));
-                            }
-                            if (!armorStand.getWorld().getBlockAt(armorStand.getLocation().add(0, -1, 0)).getType().isAir()) {
-                                if (armorStand.getY() % 1 == 0) {
-                                    armorStand.remove();
-                                    cancel();
-                                }
+                    if (armorStand.getVehicle() == null) {
+                        if (!armorStand.getWorld().getBlockAt(armorStand.getLocation()).getType().isAir()) {
+                            armorStand.getLocation().getBlock().breakNaturally();
+                            armorStand.teleport(new Location(armorStand.getWorld(), Math.round(armorStand.getX()) + 0.5, Math.round(armorStand.getY()), Math.round(armorStand.getZ()) + 0.5));
+                        }
+                        if (!armorStand.getWorld().getBlockAt(armorStand.getLocation().add(0, -1, 0)).getType().isAir()) {
+                            if (armorStand.getY() % 1 == 0) {
+                                armorStand.remove();
+                                cancel();
                             }
                         }
-                    } else {
-                        cancel();
                     }
                 }
             };
@@ -263,16 +250,16 @@ public class CarryListener implements Listener {
         }
     }
 
-    private static int getNumberPattern(int input, int limit) {
-        int cycleLength = 2 * limit - 2;
+    private static int getNumberPattern(int input) {
+        int cycleLength = 2 * 11 - 2;
         int position = input % cycleLength;
 
         if (position == 0) {
-            return 2; // Special case for multiples of cycleLength
-        } else if (position <= limit) {
+            return 2;
+        } else if (position <= 11) {
             return position;
         } else {
-            return 2 * limit - position;
+            return 2 * 11 - position;
         }
     }
 
@@ -283,12 +270,12 @@ public class CarryListener implements Listener {
                 if (player != null && player.isValid()) {
                     if (player.getPassenger() != null && player.getPassenger().isValid()) {
                         if (!player.isSneaking()) {
-                            if (player.getPassenger().getType() == EntityType.ARMOR_STAND && player.getPassenger().getPassenger().getType() == EntityType.FALLING_BLOCK) {
-                                player.sendActionBar(Component.text("-- ").color(TextColor.color(61, 226, 255)).append(Component.translatable(((FallingBlock) player.getPassenger().getPassenger()).getBlockData().getMaterial().getItemTranslationKey())).color(TextColor.color(61, 226, 255)).append(Component.text(" --").color(TextColor.color(61, 119, 255))));
-                            } else if (player.getPassenger().getType() == EntityType.ARMOR_STAND && player.getPassenger().getPassenger().getType() == EntityType.PLAYER) {
+                            if (player.getPassenger().getType() == EntityType.ARMOR_STAND && Objects.requireNonNull(player.getPassenger().getPassenger()).getType() == EntityType.FALLING_BLOCK) {
+                                player.sendActionBar(Component.text("-- ").color(TextColor.color(61, 226, 255)).append(Component.translatable(Objects.requireNonNull(((FallingBlock) player.getPassenger().getPassenger()).getBlockData().getMaterial().getItemTranslationKey()))).color(TextColor.color(61, 226, 255)).append(Component.text(" --").color(TextColor.color(61, 119, 255))));
+                            } else if (player.getPassenger().getType() == EntityType.ARMOR_STAND && Objects.requireNonNull(player.getPassenger().getPassenger()).getType() == EntityType.PLAYER) {
                                 player.sendActionBar(Component.text("-- ").color(TextColor.color(61, 226, 255)).append(Component.translatable((player.getPassenger().getPassenger()).getName()).color(TextColor.color(61, 226, 255)).append(Component.text(" --").color(TextColor.color(61, 119, 255)))));
                             } else {
-                                player.sendActionBar(Component.text("-- ").color(TextColor.color(61, 226, 255)).append(Component.translatable(player.getPassengers().get(0).getName()).color(TextColor.color(61, 226, 255))).append(Component.text(" --").color(TextColor.color(61, 119, 255))));
+                                player.sendActionBar(Component.text("-- ").color(TextColor.color(61, 226, 255)).append(Component.translatable(player.getPassenger().getName()).color(TextColor.color(61, 226, 255))).append(Component.text(" --").color(TextColor.color(61, 119, 255))));
                             }
                         }
                     } else {
@@ -309,16 +296,15 @@ public class CarryListener implements Listener {
                 if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getPlayer().isSneaking() && event.getPlayer().getInventory().getItemInMainHand().isEmpty()) {
                     if (config.getFileConfiguration().getBoolean("functions.carryMobs.enabled") && config.getFileConfiguration().getBoolean("functions.carryMobs.allowBlockCarry")) {
                         if (!config.getFileConfiguration().getBoolean("functions.carryMobs.blacklistBlocks")) {
-                            if (config.getFileConfiguration().getStringList("functions.carryMobs.whitelistBlocks").contains(event.getClickedBlock().getType().name())) {
-                                ArmorStand armorStand = (ArmorStand) event.getPlayer().getWorld().spawnEntity(event.getInteractionPoint(), EntityType.ARMOR_STAND);
-                                fallingBlockInv.put(armorStand.getUniqueId(), event.getClickedBlock().getState());
+                            if (config.getFileConfiguration().getStringList("functions.carryMobs.whitelistBlocks").contains(Objects.requireNonNull(event.getClickedBlock()).getType().name())) {
+                                ArmorStand armorStand = (ArmorStand) event.getPlayer().getWorld().spawnEntity(Objects.requireNonNull(event.getInteractionPoint()), EntityType.ARMOR_STAND);
                                 armorStand.setNoPhysics(true);
                                 armorStand.getPersistentDataContainer().set(namespacedKey, PersistentDataType.BOOLEAN, true);
                                 armorStand.setInvisible(true);
                                 armorStand.setInvulnerable(true);
                                 armorStand.setBasePlate(false);
                                 armorStand.setSmall(true);
-                                armorStand.getAttribute(Attribute.GENERIC_SCALE).setBaseValue(0.1);
+                                Objects.requireNonNull(armorStand.getAttribute(Attribute.GENERIC_SCALE)).setBaseValue(0.1);
                                 FallingBlock fallingBlock = event.getPlayer().getWorld().spawnFallingBlock(event.getInteractionPoint().add(0, 400, 0), event.getClickedBlock().getBlockData());
                                 fallingBlock.setBlockState(event.getClickedBlock().getState());
                                 fallingBlock.setInvulnerable(true);
@@ -330,16 +316,15 @@ public class CarryListener implements Listener {
                                 event.setCancelled(true);
                             }
                         } else {
-                            if (!config.getFileConfiguration().getStringList("functions.carryMobs.whitelistBlocks").contains(event.getClickedBlock().getType().name())) {
-                                ArmorStand armorStand = (ArmorStand) event.getPlayer().getWorld().spawnEntity(event.getInteractionPoint(), EntityType.ARMOR_STAND);
-                                fallingBlockInv.put(armorStand.getUniqueId(), event.getClickedBlock().getState());
+                            if (!config.getFileConfiguration().getStringList("functions.carryMobs.whitelistBlocks").contains(Objects.requireNonNull(event.getClickedBlock()).getType().name())) {
+                                ArmorStand armorStand = (ArmorStand) event.getPlayer().getWorld().spawnEntity(Objects.requireNonNull(event.getInteractionPoint()), EntityType.ARMOR_STAND);
                                 armorStand.setNoPhysics(true);
                                 armorStand.getPersistentDataContainer().set(namespacedKey, PersistentDataType.BOOLEAN, true);
                                 armorStand.setInvisible(true);
                                 armorStand.setInvulnerable(true);
                                 armorStand.setBasePlate(false);
                                 armorStand.setSmall(true);
-                                armorStand.getAttribute(Attribute.GENERIC_SCALE).setBaseValue(0.1);
+                                Objects.requireNonNull(armorStand.getAttribute(Attribute.GENERIC_SCALE)).setBaseValue(0.1);
                                 FallingBlock fallingBlock = event.getPlayer().getWorld().spawnFallingBlock(event.getInteractionPoint().add(0, 400, 0), event.getClickedBlock().getBlockData());
                                 fallingBlock.setBlockState(event.getClickedBlock().getState());
                                 fallingBlock.setInvulnerable(true);

@@ -1,6 +1,7 @@
 package de.thecoolcraft11.commands;
 
 import de.thecoolcraft11.SurvivalUtilities;
+import de.thecoolcraft11.util.Config;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,6 +23,15 @@ public class SaveCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+        Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+        if (!config.getFileConfiguration().getBoolean("commands.saveSchematic.enabled")) {
+            sender.sendMessage("This command is disabled in the config");
+            return true;
+        }
+        if (!sender.hasPermission("survivalutilities.saveschematic")) {
+            sender.sendMessage("You don't have permission to use this command");
+            return true;
+        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be used by players.");
             return true;

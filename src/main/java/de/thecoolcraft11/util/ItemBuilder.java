@@ -27,6 +27,7 @@ public class ItemBuilder {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     public ItemBuilder setPersistentData(String key, PersistentDataType persistentDataType, Object value) {
         itemMeta.getPersistentDataContainer().set(new NamespacedKey(SurvivalUtilities.getPlugin(SurvivalUtilities.class), key), persistentDataType, value);
         return this;

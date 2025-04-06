@@ -1,5 +1,6 @@
 package de.thecoolcraft11.util;
 
+import de.thecoolcraft11.SurvivalUtilities;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -13,7 +14,12 @@ public class PlayerConfig {
     public PlayerConfig(File dataFolder, String name) {
         this.playerDataFolder = new File(dataFolder, name);
         if (!this.playerDataFolder.exists()) {
-            this.playerDataFolder.mkdirs();
+            boolean wasCreated = this.playerDataFolder.mkdirs();
+            if (wasCreated) {
+                SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().info("Created player data folder: " + this.playerDataFolder);
+            } else {
+                SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().warning("Player data folder already exists: " + this.playerDataFolder);
+            }
         }
     }
 
@@ -21,9 +27,14 @@ public class PlayerConfig {
         File playerFile = new File(playerDataFolder, playerUUID.toString() + ".yml");
         if (!playerFile.exists()) {
             try {
-                playerFile.createNewFile();
+                boolean wasCreated = playerFile.createNewFile();
+                if (wasCreated) {
+                    SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().info("Created player config file for " + playerUUID);
+                } else {
+                    SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().warning("Player config file already exists for " + playerUUID);
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().severe("Failed to create player config file for " + playerUUID);
             }
         }
         return YamlConfiguration.loadConfiguration(playerFile);
@@ -34,7 +45,7 @@ public class PlayerConfig {
         try {
             config.save(playerFile);
         } catch (IOException e) {
-            e.printStackTrace();
+            SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().severe("Failed to save player config file for " + playerUUID);
         }
     }
 }

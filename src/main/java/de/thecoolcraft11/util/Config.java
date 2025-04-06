@@ -9,21 +9,20 @@ import java.io.File;
 import java.io.IOException;
 
 public class Config {
-    private FileConfiguration fileConfiguration;
-    private File file;
+    private final FileConfiguration fileConfiguration;
+    private final File file;
+
     public Config(String name, File path) {
         file = new File(path, name);
 
-        if(!file.exists()) {
+        if (!file.exists()) {
 
             SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).saveResource(name, false);
         }
         fileConfiguration = new YamlConfiguration();
         try {
             fileConfiguration.load(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             throw new RuntimeException(e);
         }
     }
@@ -35,6 +34,7 @@ public class Config {
     public FileConfiguration getFileConfiguration() {
         return fileConfiguration;
     }
+
     public void save() {
         try {
             fileConfiguration.save(file);
@@ -42,12 +42,11 @@ public class Config {
             throw new RuntimeException(e);
         }
     }
+
     public void reload() {
         try {
             fileConfiguration.load(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             throw new RuntimeException(e);
         }
     }

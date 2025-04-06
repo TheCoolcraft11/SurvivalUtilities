@@ -1,6 +1,7 @@
 package de.thecoolcraft11.commands;
 
 import de.thecoolcraft11.SurvivalUtilities;
+import de.thecoolcraft11.util.Config;
 import de.thecoolcraft11.util.PlayerConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,12 +15,22 @@ public class KeepInventoryCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
+        Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+        if (config.getFileConfiguration().getBoolean("commands.keepInventory.enabled")) {
+            if (!commandSender.hasPermission("survivalutilities.keepinventory")) {
+                commandSender.sendMessage("You don't have permission to use this command");
+                return true;
+            }
+        } else {
+            commandSender.sendMessage("This command is disabled in the config");
+            return true;
+        }
         if (commandSender instanceof Player) {
-            
+
             FileConfiguration settings = playerConfig.getPlayerConfig(((Player) commandSender).getUniqueId());
-            settings.set("keepInventory", !((Boolean) settings.get("keepInventory")));
+            settings.set("keepInventory", !settings.getBoolean("keepInventory"));
             playerConfig.savePlayerConfig(((Player) commandSender).getUniqueId(), settings);
-            if (((Boolean) settings.get("keepInventory"))) {
+            if (settings.getBoolean("keepInventory")) {
                 commandSender.sendMessage("KeepInventory activated");
             } else {
                 commandSender.sendMessage("KeepInventory disabled");

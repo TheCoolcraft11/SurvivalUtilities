@@ -1,5 +1,7 @@
 package de.thecoolcraft11.commands;
 
+import de.thecoolcraft11.SurvivalUtilities;
+import de.thecoolcraft11.util.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -10,6 +12,15 @@ import org.jetbrains.annotations.NotNull;
 public class SudoCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+        if (!config.getFileConfiguration().getBoolean("commands.sudo.enabled")) {
+            sender.sendMessage("This command is disabled in the config");
+            return true;
+        }
+        if (!sender.hasPermission("survivalutilities.sudo")) {
+            sender.sendMessage("You don't have permission to use this command");
+            return true;
+        }
         if (args.length < 2) {
             sender.sendMessage("Usage: /sudo <player> <command>");
             return false;

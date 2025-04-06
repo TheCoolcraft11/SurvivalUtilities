@@ -1,14 +1,18 @@
 package de.thecoolcraft11.commands;
 
 import de.thecoolcraft11.SurvivalUtilities;
+import de.thecoolcraft11.util.Config;
+import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentBuilder;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.sign.Side;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,6 +23,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
@@ -27,7 +32,17 @@ public class PlaceCommand implements CommandExecutor {
 
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+        Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+        if (config.getFileConfiguration().getBoolean("commands.placeSchematic.enabled")) {
+            if (!sender.hasPermission("survivalutilities.placeSchematic")) {
+                sender.sendMessage("You don't have permission to use this command");
+                return true;
+            }
+        } else {
+            sender.sendMessage("This command is disabled in the config");
+            return true;
+        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be used by players.");
             return true;
@@ -54,14 +69,14 @@ public class PlaceCommand implements CommandExecutor {
 
     private void placeSchematic(Location startLocation, File file, World world, Player player) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-        Set<String> keys = config.getConfigurationSection("blocks").getKeys(false);
+        Set<String> keys = Objects.requireNonNull(config.getConfigurationSection("blocks")).getKeys(false);
         int startX = startLocation.getBlockX();
         int startY = startLocation.getBlockY();
         int startZ = startLocation.getBlockZ();
 
 
         BukkitRunnable runnable = new BukkitRunnable() {
-            final Set<String> keys = config.getConfigurationSection("blocks").getKeys(false);
+            final Set<String> keys = Objects.requireNonNull(config.getConfigurationSection("blocks")).getKeys(false);
             boolean remove = true;
             int repeats = 0;
 
@@ -86,14 +101,18 @@ public class PlaceCommand implements CommandExecutor {
                     minZ = Math.min(minZ, z);
                     maxZ = Math.max(maxZ, z);
 
-                    Block block = world.getBlockAt(startX + x, startY + y, startZ + z);
                     String blockDataString = config.getString("blocks." + key + ".blockData");
-                    BlockData blockData = Bukkit.createBlockData(blockDataString);
+                    BlockData blockData = null;
+                    if (blockDataString != null) {
+                        blockData = Bukkit.createBlockData(blockDataString);
+                    }
 
                     Location blockLocation = new Location(startLocation.getWorld(), startX + x, startY + y, startZ + z);
 
 
-                    player.sendBlockChange(blockLocation, remove ? (repeats < 100 ? Material.BARRIER.createBlockData() : Material.AIR.createBlockData()) : blockData);
+                    if (blockData != null) {
+                        player.sendBlockChange(blockLocation, remove ? (repeats < 100 ? Material.BARRIER.createBlockData() : Material.AIR.createBlockData()) : blockData);
+                    }
 
                     if (repeats % 2 == 0) {
                         if (repeats >= 100) {
@@ -180,7 +199,7 @@ public class PlaceCommand implements CommandExecutor {
                             for (Map.Entry<Material, Integer> entry : missingItems.entrySet()) {
                                 Material material = entry.getKey();
                                 int missingAmount = entry.getValue();
-                                player.sendMessage(ChatColor.RED + material.name() + ": " + missingAmount);
+                                player.sendMessage(Component.text(material.name() + ": " + missingAmount).color(TextColor.color(255, 0, 0)));
                                 openItemListBook(player, missingItems);
                             }
                         }
@@ -250,7 +269,7 @@ public class PlaceCommand implements CommandExecutor {
 
         List<Component> pages = new ArrayList<>();
 
-        ComponentBuilder pageContent = Component.text()
+        ComponentBuilder<TextComponent, TextComponent.Builder> pageContent = Component.text()
                 .append(Component.text("§cMissing Items:\n\n"));
         int lineCount = 0;
 
@@ -278,13 +297,13 @@ public class PlaceCommand implements CommandExecutor {
             pages.add(pageContent.build());
         }
 
-        bookMeta.pages(pages);
+        Book book1 = bookMeta.pages(pages);
         book.setItemMeta(bookMeta);
 
-        player.openBook(book);
+        player.openBook(book1);
     }
 
-    private Component getTranslatedName(Player player, Material material) {
+    private Component getTranslatedName(Player ignoredPlayer, Material material) {
         String translationKey = material.name().toLowerCase().replace("_", " ");
         translationKey = Character.toUpperCase(translationKey.charAt(0)) + translationKey.substring(1);
 
@@ -295,9 +314,7 @@ public class PlaceCommand implements CommandExecutor {
         translationKey = String.join(" ", words);
 
 
-        Component translatedComponent = Component.translatable(translationKey);
-
-        return translatedComponent;
+        return Component.translatable(translationKey);
     }
 
     private Map<Material, Integer> getMissingItemsWithAmount(Set<String> keys, YamlConfiguration config, Player player) {
@@ -306,12 +323,19 @@ public class PlaceCommand implements CommandExecutor {
         for (String key : keys) {
             String materialName = config.getString("blocks." + key + ".type");
             String materialData = config.getString("blocks." + key + ".blockData");
-            Material material = Material.matchMaterial(materialName);
-            if (material != null && material.isItem() && !materialData.contains("part=foot") && !materialData.contains("half=lower")) {
+            Material material = null;
+            if (materialName != null) {
+                material = Material.matchMaterial(materialName);
+            }
+            if (materialData != null && material != null && material.isItem() && !materialData.contains("part=foot") && !materialData.contains("half=lower")) {
                 requiredItems.put(material, requiredItems.getOrDefault(material, 0) + 1);
             }
         }
 
+        return getMaterialIntegerMap(player, requiredItems);
+    }
+
+    private static @NotNull Map<Material, Integer> getMaterialIntegerMap(Player player, Map<Material, Integer> requiredItems) {
         Map<Material, Integer> missingItems = new HashMap<>();
         for (Map.Entry<Material, Integer> entry : requiredItems.entrySet()) {
             Material material = entry.getKey();
@@ -328,7 +352,6 @@ public class PlaceCommand implements CommandExecutor {
                 missingItems.put(material, requiredAmount - playerAmount);
             }
         }
-
         return missingItems;
     }
 
@@ -338,9 +361,12 @@ public class PlaceCommand implements CommandExecutor {
         for (String key : keys) {
             String materialName = config.getString("blocks." + key + ".type");
             String materialData = config.getString("blocks." + key + ".blockData");
-            Material material = Material.matchMaterial(materialName);
+            Material material = null;
+            if (materialName != null) {
+                material = Material.matchMaterial(materialName);
+            }
 
-            if (material != null && material.isItem() && !materialData.contains("part=foot") && !materialData.contains("half=lower")) {
+            if (materialData != null && material != null && material.isItem() && !materialData.contains("part=foot") && !materialData.contains("half=lower")) {
                 requiredItems.put(material, requiredItems.getOrDefault(material, 0) + 1);
             }
         }
@@ -442,7 +468,6 @@ public class PlaceCommand implements CommandExecutor {
         final int delay = 1;
 
         final Iterator<String> keyIterator = keys.iterator();
-        final int[] currentIndex = {0};
         Bukkit.getScheduler().runTaskTimer(SurvivalUtilities.getPlugin(SurvivalUtilities.class), new Runnable() {
             @Override
             public void run() {
@@ -469,14 +494,13 @@ public class PlaceCommand implements CommandExecutor {
                             BlockData blockData = Bukkit.createBlockData(blockDataString);
                             block.setType(material, false);
                             world.playSound(block.getLocation(), block.getBlockSoundGroup().getPlaceSound(), 1.0f, 1.0f);
-                            if (material.asItemType() != null) {
-                                ItemStack item = material.asItemType().createItemStack(1);
-                                player.incrementStatistic(Statistic.USE_ITEM, item.getType());
+                            if (material.isItem()) {
+                                player.incrementStatistic(Statistic.USE_ITEM, material);
                             }
                             block.setBlockData(blockData, false);
                         } catch (IllegalArgumentException e) {
                             System.out.println("Invalid block data string for material " + material + ": " + blockDataString);
-                            e.printStackTrace();
+                            SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger().severe("Invalid block data string for material " + material + ": " + blockDataString);
                             return;
                         }
                     } else {
@@ -488,9 +512,16 @@ public class PlaceCommand implements CommandExecutor {
                         if (config.contains("blocks." + key + ".inventory")) {
                             List<ItemStack> contents = new ArrayList<>();
                             for (Object item : config.getList("blocks." + key + ".inventory", new ArrayList<>())) {
-                                if (item instanceof Map) {
-                                    ItemStack itemStack = ItemStack.deserialize((Map<String, Object>) item);
-                                    contents.add(itemStack);
+                                if (item instanceof Map<?, ?> map) {
+                                    try {
+                                        @SuppressWarnings("unchecked")
+                                        Map<String, Object> itemMap = (Map<String, Object>) map;
+                                        ItemStack itemStack = ItemStack.deserialize(itemMap);
+                                        contents.add(itemStack);
+                                    } catch (ClassCastException e) {
+                                        SurvivalUtilities.getPlugin(SurvivalUtilities.class).getLogger()
+                                                .warning("Failed to deserialize inventory item: " + e.getMessage());
+                                    }
                                 }
                             }
                             holder.getInventory().setContents(contents.toArray(new ItemStack[0]));
@@ -499,17 +530,16 @@ public class PlaceCommand implements CommandExecutor {
                     }
 
                     if (state instanceof Sign sign) {
-                        String[] lines = new String[4];
+                        String[] lines = new String[8];
                         if (config.contains("blocks." + key + ".text")) {
                             lines = config.getStringList("blocks." + key + ".text").toArray(new String[0]);
                         }
-                        for (int i = 0; i < 4; i++) {
-                            sign.setLine(i, lines[i]);
+                        for (int i = 0; i < 8; i++) {
+                            sign.getSide(i < 4 ? Side.FRONT : Side.BACK).line(i > 4 ? i - 4 : i, Component.text(lines[i]));
                         }
                         sign.update();
                     }
 
-                    currentIndex[0]++;
                 } else {
                     Bukkit.getScheduler().cancelTask(this.hashCode());
                 }

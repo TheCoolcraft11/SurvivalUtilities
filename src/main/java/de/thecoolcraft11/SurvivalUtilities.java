@@ -9,6 +9,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.UUID;
 
 public final class SurvivalUtilities extends JavaPlugin {
@@ -21,14 +22,14 @@ public final class SurvivalUtilities extends JavaPlugin {
 
         config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
 
-        getCommand("chunkbase").setExecutor(new ChunkbaseCommand());
-        getCommand("survivalutilities").setExecutor(new SurvivalUtilitiesCommand());
-        getCommand("sudo").setExecutor(new SudoCommand());
+        Objects.requireNonNull(getCommand("chunkbase")).setExecutor(new ChunkbaseCommand());
+        Objects.requireNonNull(getCommand("survivalutilities")).setExecutor(new SurvivalUtilitiesCommand());
+        Objects.requireNonNull(getCommand("sudo")).setExecutor(new SudoCommand());
         //  getCommand("afk").setExecutor(new AfkCommand());
-        getCommand("keepinventory").setExecutor(new KeepInventoryCommand());
-        getCommand("save").setExecutor(new SaveCommand());
-        getCommand("place").setExecutor(new PlaceCommand());
-        getCommand("jail").setExecutor(new JailCommand());
+        Objects.requireNonNull(getCommand("keepinventory")).setExecutor(new KeepInventoryCommand());
+        Objects.requireNonNull(getCommand("save")).setExecutor(new SaveCommand());
+        Objects.requireNonNull(getCommand("place")).setExecutor(new PlaceCommand());
+        Objects.requireNonNull(getCommand("jail")).setExecutor(new JailCommand());
 
         final PluginManager pluginManager = Bukkit.getPluginManager();
 

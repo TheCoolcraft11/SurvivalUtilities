@@ -22,6 +22,14 @@ public class SurvivalUtilitiesCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+        if (!config.getFileConfiguration().getBoolean("commands.survivalutilities.enabled")) {
+            sender.sendMessage(Component.text("This command is disabled in the config").color(NamedTextColor.RED));
+            return true;
+        }
+        if (!sender.hasPermission("survivalutilities.survivalutilities")) {
+            sender.sendMessage(Component.text("You don't have permission to use this command").color(NamedTextColor.RED));
+            return true;
+        }
         if (args.length >= 1) {
             if (args[0].equals("reload")) {
                 try {

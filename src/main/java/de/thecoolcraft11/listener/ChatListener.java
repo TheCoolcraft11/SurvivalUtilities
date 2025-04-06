@@ -1,5 +1,7 @@
 package de.thecoolcraft11.listener;
 
+import de.thecoolcraft11.SurvivalUtilities;
+import de.thecoolcraft11.util.Config;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -13,6 +15,10 @@ public class ChatListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onAsyncChat(AsyncChatEvent event) {
+        Config config = new Config("config.yml", SurvivalUtilities.getProvidingPlugin(SurvivalUtilities.class).getDataFolder());
+        if (!config.getFileConfiguration().getBoolean("functions.chat.enabled")) {
+            return;
+        }
         Component component = event.message();
 
         String message = component.toString();
